@@ -3,8 +3,8 @@
 インストール先は、C:\Users\ユーザ\AppData\Roaming\laylaClass\send_dump です\
 中には、以下の二つの実行用スクリプトがコピーされます。
 
-dump.vbs
-dump_c.vbs
+##dump.vbs\
+##dump_c.vbs
 
 アンインストールは、send_dump フォルダごと全て削除して、
 エクスプローラのアドレスに sendto と入力して SendoTo  フォ
