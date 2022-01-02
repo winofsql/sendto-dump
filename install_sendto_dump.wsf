@@ -1,0 +1,250 @@
+<JOB>
+<COMMENT>
+************************************************************
+「送るに入れるプログラム」インストーラ
+
+■VBScripによるダンプアプリケーション
+
+■著作権その他
+
+このプログラムはフリーです。どうぞ自由に御使用ください。
+著作権は作者である私(lightbox)が保有しています。
+また、本ソフトを運用した結果については、作者は一切責任を
+負えせんのでご了承ください。
+************************************************************
+</COMMENT>
+
+<SCRIPT
+	language="VBScript"
+	src="http://lightbox.in.coocan.jp/laylaClass.vbs">
+</SCRIPT>
+
+<SCRIPT language=VBScript>
+' ***********************************************************
+' 処理開始
+' ***********************************************************
+Call laylaFunctionTarget( "http://lightbox.in.coocan.jp/" )
+Call laylaLoadFunction( "baseFunction.vbs" )
+Call laylaLoadFunction( "toolFunction.vbs" )
+
+
+' //////////////////////////////////////////////////////////
+' インストール時の表示名
+strProgName	= "簡易ダンプ"
+' //////////////////////////////////////////////////////////
+
+
+' Csript.exe で実行を強制
+'Crun
+
+print strProgName & " をインストールします"
+if not OkCancel( "インストールしてもよろしいですか?" ) then
+	Wscript.Quit
+end if
+
+' ファイルシステムオブジェクト作成
+GetFso
+
+strInstallBasePath = GetShellDir( &h1a )
+strInstallPath1 = strInstallBasePath & "\laylaClass"
+strInstallPath2 = strInstallBasePath & "\laylaClass\send_dump"
+strInstallPath3 = strInstallBasePath & "\laylaClass\send_dump\dump_c.vbs"
+strInstallPath4 = strInstallBasePath & "\laylaClass\send_dump\dump.vbs"
+
+on error resume next
+if not Fso.FolderExists( strInstallPath1 ) then
+	Call Fso.CreateFolder( strInstallPath1 )
+end if
+if not Fso.FolderExists( strInstallPath2 ) then
+	Call Fso.CreateFolder( strInstallPath2 )
+end if
+on error goto 0
+
+Call PutTextFile( strInstallPath3, GetInline("dump_c") )
+Call PutTextFile( strInstallPath4, GetInline("dump") )
+
+
+GetWshShell
+
+strSendto = WshShell.SpecialFolders("SendTo")
+Set oShellLink = WshShell.CreateShortcut(strSendto & "\簡易ダンプ.lnk")
+
+oShellLink.TargetPath = "%windir%\system32\wscript.exe"
+oShellLink.Arguments = "dump.vbs 1000"
+oShellLink.WindowStyle = 1
+oShellLink.IconLocation = "%SystemRoot%\system32\SHELL32.dll,55"
+oShellLink.Description = "作成者 : lightbox"
+oShellLink.WorkingDirectory = strInstallPath2
+oShellLink.Save
+
+
+print "処理が終了しました"
+'print ""
+
+Wscript.Quit
+
+</SCRIPT>
+
+<COMMENT>
+******** ●ここを変更● ********
+</COMMENT>
+<RESOURCE id="dump_c">
+<![CDATA[
+' ****************************************************
+' ファイルを１６進数でダンプします
+' ****************************************************
+Dim Fs,Stream
+Dim InFile
+Dim Kana
+Dim KjFlg
+Kana = Array( _
+"｡","｢","｣","､","･","ｦ","ｧ","ｨ","ｩ","ｪ","ｫ","ｬ","ｭ","ｮ","ｯ", _
+"ｰ","ｱ","ｲ","ｳ","ｴ","ｵ","ｶ","ｷ","ｸ","ｹ","ｺ","ｻ","ｼ","ｽ","ｾ","ｿ", _
+"ﾀ","ﾁ","ﾂ","ﾃ","ﾄ","ﾅ","ﾆ","ﾇ","ﾈ","ﾉ","ﾊ","ﾋ","ﾌ","ﾍ","ﾎ","ﾏ", _
+"ﾐ","ﾑ","ﾒ","ﾓ","ﾔ","ﾕ","ﾖ","ﾗ","ﾘ","ﾙ","ﾚ","ﾛ","ﾜ","ﾝ","ﾞ","ﾟ" )
+
+Set Fs = CreateObject( "Scripting.FileSystemObject" )
+Set Stream = CreateObject("ADODB.Stream")
+
+InFile = WScript.Arguments(0)
+
+Dim LineBuffer,DispBuffer,CWork,nCnt,strBuff,i,j
+
+if not Fs.FileExists( InFile ) then
+	Wscript.Echo "ファイルが存在しません"
+	Wscript.Quit
+end if
+
+' ------------------------------------------------------
+' Stream のオープン
+Stream.Open
+ 
+' ------------------------------------------------------
+' Stream タイプの指定
+Stream.Type = 1		' StreamTypeEnum の adTypeBinary
+ 
+' ------------------------------------------------------
+' 既存ファイルの内容を Stream に読み込む
+Stream.LoadFromFile InFile
+ 
+' ------------------------------------------------------
+' バイナリ型の Stream オブジェクトからを読み取って加工
+Bcnt = 0
+nCnt = 0
+KjFlg = ""
+
+Do while not Stream.EOS
+
+	if ( nCnt MOD 16 ) = 0 then
+		Wscript.Echo "          0  1  2  3  4  5  6  7" _
+		& "  8  9  A  B  C  D  E  F"
+		Wscript.Echo "--------------------------------" _
+		& "------------------------------------------"
+	end if
+
+	' 16 バイトの読込
+	LineBuffer = Stream.Read(16)
+
+	strBuff = ""
+	For i = 1 to LenB( LineBuffer )
+		CWork = MidB(LineBuffer,i,1)
+		Cwork = AscB(Cwork)
+		Cwork = Hex(Cwork)
+		Cwork = Ucase(Cwork)
+		Cwork = Right( "0" & Cwork, 2 )
+		DispBuffer = DispBuffer & Cwork & " "
+		strBuff = strBuff & CharConv( Cwork )
+	Next
+
+	Wscript.Echo _
+		Right( _
+			"00000000" & Ucase(Hex( nCnt * 16 )), 8 _
+		) & " " & _
+		Left(DispBuffer & String(49," "), 49 ) & strBuff
+	DispBuffer = ""
+
+	nCnt = nCnt + 1
+ 
+Loop
+ 
+' ------------------------------------------------------
+' Stream を閉じる
+Stream.Close
+
+Set Stream = Nothing
+Stream = Empty
+Set Fs = Nothing
+Fs = Empty
+
+' ****************************************************
+' 生データのテキスト
+' ****************************************************
+function CharConv( HexCode )
+
+	Dim nCode
+
+	nCode = Cint( "&H" & HexCode )
+
+	if KjFlg = "" then
+		if &H81 <= nCode and nCode <= &H84 or _
+			&H88 <= nCode and nCode <= &H9f or _
+			&HE0 <= nCode and nCode <= &HEA then
+			KjFlg = HexCode
+			CharConv = ""
+			Exit Function
+		end if
+	else
+		if HexCode <> "00" then
+			KjFlg = KjFlg & HexCode
+			CharConv = Chr( Cint( "&H" & KjFlg ) )
+		else
+			CharConv = ".."
+		end if
+		KjFlg = ""
+		Exit Function
+	end if
+
+	if 0 <= nCode and nCode <= &H1F then
+		CharConv = "."
+	end if
+	if &H20 <= nCode and nCode <= &H7E then
+		CharConv = Chr(nCode)
+	end if
+	if &H7F <= nCode and nCode <= &HA0 then
+		CharConv = "."
+	end if
+	if &HA1 <= nCode and nCode <= &HDF then
+		CharConv = Kana(nCode-&HA1)
+	end if
+	if &HE0 <= nCode and nCode <= &HFF then
+		CharConv = "."
+	end if
+
+end function
+]]>
+</RESOURCE>
+<RESOURCE id="dump">
+<![CDATA[
+if WScript.Arguments.Count = 1 then
+	strMessage = "送るから実行して下さい" & vbCrLf & vbCrLf
+	strMessage = strMessage & "※ リンク先の最後の数字はコマンドプロンプトの行数です　　　" & vbCrLf
+	strMessage = strMessage & "※ プロパティよりウインドウを最大化する方法もあります　　　" & vbCrLf
+	Call MsgBox(strMessage,0,"lightbox")
+	Wscript.Quit
+end if
+
+Set WshShell = CreateObject( "WScript.Shell" )   
+Set Fso = CreateObject( "Scripting.FileSystemObject" )
+
+strCurPath = WScript.ScriptFullName
+Set obj = Fso.GetFile( strCurPath )
+Set obj = obj.ParentFolder
+strCurPath = obj.Path
+
+strCommand = "cmd /k mode CON lines="&WScript.Arguments(0)&" & cscript.exe """ & _
+strCurPath & "\dump_c.vbs"" """ & WScript.Arguments(1) & """ | more & pause"
+Call WshShell.Run( strCommand )
+]]>
+</RESOURCE>
+
+</JOB>
