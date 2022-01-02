@@ -1,6 +1,6 @@
 # sendto-dump
 
-インストール先は、C:\Users\ユーザ\AppData\Roaming\laylaClass\send_dump です
+インストール先は、C:\Users\ユーザ\AppData\Roaming\laylaClass\send_dump です\
 中には、以下の二つの実行用スクリプトがコピーされます。
 
 dump.vbs
